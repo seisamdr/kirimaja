@@ -1,257 +1,303 @@
 import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { AddSquare } from "iconsax-reactjs";
-import { branches } from "@/data/branch";
 import {
-	createEmployeeSchema,
-	type CreateEmployeeFormData,
+  createEmployeeSchema,
+  type CreateEmployeeFormData,
 } from "@/lib/validations/employee";
+import { useAuth } from "@/hooks/use-auth";
+import { useBranches } from "@/hooks/use-branch";
+import { useCreateEmployee, useEmployees } from "@/hooks/use-employee";
+import { UserRole } from "@/lib/api";
 
 interface AddEmployeeModalProps {
-	onEmployeeAdded?: () => void;
+  onEmployeeAdded?: () => void;
 }
 
 export function AddEmployeeModal({ onEmployeeAdded }: AddEmployeeModalProps) {
-	const [isLoading, setIsLoading] = useState(false);
-	const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-	const form = useForm<CreateEmployeeFormData>({
-		resolver: zodResolver(createEmployeeSchema),
-		defaultValues: {
-			email: "",
-			name: "",
-			phone_number: "",
-			type: undefined,
-			branch_id: undefined,
-			password: "",
-		},
-	});
+  const createEmployeeMutation = useCreateEmployee();
+  const { user } = useAuth();
 
-	async function onSubmit(_values: CreateEmployeeFormData) {
-		try {
-			setIsLoading(true);
-			// TODO: Implement actual API call when backend is ready
-			console.log("Creating employee with data:", _values);
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			toast.success("Karyawan berhasil ditambahkan!");
-			setIsOpen(false);
-			form.reset();
-			onEmployeeAdded?.();
-		} catch (error) {
-			console.error("Error creating employee:", error);
-			toast.error("Gagal menambahkan karyawan. Silakan coba lagi.");
-		} finally {
-			setIsLoading(false);
-		}
-	}
+  const isAdminBranch = user?.role?.key === "admin-branch";
+  const { data: employees = [] } = useEmployees();
+  const { data: branches = [], isLoading: isLoadingBranches } = useBranches({
+    enabled: !isAdminBranch,
+  });
 
-	const handleCancel = () => {
-		setIsOpen(false);
-		form.reset();
-	};
+  // Find admin's branch_id if they are admin branch
+  const adminEmployee = isAdminBranch
+    ? employees.find((employee) => employee.user.id === user.id)
+    : null;
 
-	return (
-		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				<Button variant="darkGreen">
-					Tambah Karyawan
-					<AddSquare className="ml-auto" variant="Bold" size="20" />
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="sm:max-w-[500px]">
-				<DialogHeader>
-					<DialogTitle>Tambah Karyawan Baru</DialogTitle>
-					<DialogDescription>
-						Masukkan informasi karyawan baru yang akan ditambahkan
-					</DialogDescription>
-				</DialogHeader>
-				<Form {...form}>
-					<form
-						onSubmit={form.handleSubmit(onSubmit)}
-						className="space-y-4"
-					>
-						<FormField
-							control={form.control}
-							name="name"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Nama Lengkap</FormLabel>
-									<FormControl>
-										<Input
-											{...field}
-											placeholder="Masukkan nama lengkap"
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+  const defaultBranchId = adminEmployee?.branch_id;
 
-						<FormField
-							control={form.control}
-							name="email"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Email</FormLabel>
-									<FormControl>
-										<Input
-											{...field}
-											type="email"
-											placeholder="Masukkan email"
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+  const form = useForm<CreateEmployeeFormData>({
+    resolver: zodResolver(createEmployeeSchema),
+    defaultValues: {
+      email: "",
+      name: "",
+      phone_number: "",
+      type: isAdminBranch ? "courier" : "admin",
+      branch_id: defaultBranchId || 0,
+      role_id: isAdminBranch ? UserRole.COURIER : UserRole.ADMIN_BRANCH,
+      password: "",
+    },
+  });
 
-						<FormField
-							control={form.control}
-							name="phone_number"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Nomor Telepon</FormLabel>
-									<FormControl>
-										<Input
-											{...field}
-											placeholder="Masukkan nomor telepon"
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+  useEffect(() => {
+    if (
+      isAdminBranch &&
+      defaultBranchId &&
+      defaultBranchId !== form.getValues("branch_id")
+    ) {
+      form.setValue("branch_id", defaultBranchId);
+    }
+  }, [isAdminBranch, defaultBranchId, form]);
 
-						<FormField
-							control={form.control}
-							name="type"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Tipe Karyawan</FormLabel>
-									<Select
-										onValueChange={field.onChange}
-										value={field.value}
-									>
-										<FormControl>
-											<SelectTrigger>
-												<SelectValue placeholder="Pilih tipe karyawan" />
-											</SelectTrigger>
-										</FormControl>
-										<SelectContent>
-											<SelectItem value="courier">
-												Kurir
-											</SelectItem>
-											<SelectItem value="admin">
-												Admin
-											</SelectItem>
-										</SelectContent>
-									</Select>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+  // Update role_id when type changes
+  useEffect(() => {
+    if (!isAdminBranch) {
+      const subscription = form.watch((value, { name }) => {
+        if (name === "type" && value.type) {
+          const roleId =
+            value.type === "courier" ? UserRole.COURIER : UserRole.ADMIN_BRANCH;
+          form.setValue("role_id", roleId);
+        }
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [form, isAdminBranch]);
 
-						<FormField
-							control={form.control}
-							name="branch_id"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Cabang</FormLabel>
-									<Select
-										onValueChange={field.onChange}
-										value={
-											field.value
-												? field.value.toString()
-												: undefined
-										}
-									>
-										<FormControl>
-											<SelectTrigger>
-												<SelectValue placeholder="Pilih cabang" />
-											</SelectTrigger>
-										</FormControl>
-										<SelectContent>
-											{branches.map((branch) => (
-												<SelectItem
-													key={branch.id}
-													value={branch.id.toString()}
-												>
-													{branch.name}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+  async function onSubmit(_values: CreateEmployeeFormData) {
+    try {
+      await createEmployeeMutation.mutateAsync(_values);
+      setIsOpen(false);
+      form.reset();
+      onEmployeeAdded?.();
+    } catch (error) {
+      console.error("Error creating employee:", error);
+      toast.error("Gagal menambahkan karyawan. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
-						<FormField
-							control={form.control}
-							name="password"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Password</FormLabel>
-									<FormControl>
-										<Input
-											{...field}
-											type="password"
-											placeholder="Masukkan password"
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+  const handleCancel = () => {
+    setIsOpen(false);
+    form.reset();
+  };
 
-						<DialogFooter>
-							<Button
-								type="button"
-								variant="secondary"
-								onClick={handleCancel}
-								disabled={isLoading}
-							>
-								Batal
-							</Button>
-							<Button
-								type="submit"
-								variant="darkGreen"
-								disabled={isLoading}
-							>
-								{isLoading ? "Menyimpan..." : "Simpan"}
-							</Button>
-						</DialogFooter>
-					</form>
-				</Form>
-			</DialogContent>
-		</Dialog>
-	);
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="darkGreen">
+          Tambah Karyawan
+          <AddSquare className="ml-auto" variant="Bold" size="20" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Tambah Karyawan Baru</DialogTitle>
+          <DialogDescription>
+            Masukkan informasi karyawan baru yang akan ditambahkan
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nama Lengkap</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Masukkan nama lengkap" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="email"
+                      placeholder="Masukkan email"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="phone_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nomor Telepon</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Masukkan nomor telepon" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipe Karyawan</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isAdminBranch}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih tipe karyawan" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="courier">Kurir</SelectItem>
+                      {!isAdminBranch && (
+                        <SelectItem value="admin">Admin</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {!isAdminBranch && (
+              <FormField
+                control={form.control}
+                name="branch_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cabang</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      value={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih cabang" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {isLoadingBranches ? (
+                          <SelectItem value="" disabled>
+                            Memuat cabang...
+                          </SelectItem>
+                        ) : (
+                          branches.map((branch) => (
+                            <SelectItem
+                              key={branch.id}
+                              value={branch.id.toString()}
+                            >
+                              {branch.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="password"
+                      placeholder="Masukkan password"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="role_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input {...field} type="hidden" value={field.value || ""} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleCancel}
+                disabled={isLoading}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="darkGreen"
+                disabled={createEmployeeMutation.isPending}
+              >
+                {createEmployeeMutation.isPending ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
 }

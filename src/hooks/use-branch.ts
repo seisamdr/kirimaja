@@ -13,11 +13,12 @@ export const branchKeys = {
 };
 
 // Get all branches
-export const useBranches = () => {
+export const useBranches = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: branchKeys.lists(),
     queryFn: branchService.getAll,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: options?.enabled ?? true,
   });
 };
 
@@ -38,7 +39,7 @@ export const useCreateBranch = () => {
   return useMutation({
     mutationFn: (data: CreateBranchRequest) => branchService.create(data),
     onSuccess: () => {
-      toast.success("Cabang berhasil ditammbahkan");
+      toast.success("Cabang berhasil ditambahkan");
       queryClient.invalidateQueries({ queryKey: branchKeys.lists() });
     },
     onError: (error: Error) => {
