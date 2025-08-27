@@ -3,7 +3,6 @@ import { DataTable } from "./components/datatable";
 import { createColumns } from "./components/datatable/columns";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Toaster } from "react-hot-toast";
 import { useMeta, META_DATA } from "@/hooks/use-meta";
 import { useRoles } from "@/hooks/use-role";
 import { PermissionGuard, Skeleton } from "@/components";
