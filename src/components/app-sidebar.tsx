@@ -155,7 +155,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const renderMenuItem = (item: MenuItem) => {
     if (item.permission) {
-      console.log(item.permission);
       return (
         <PermissionGuard key={item.title} permission={item.permission}>
           <SidebarMenuItem>
