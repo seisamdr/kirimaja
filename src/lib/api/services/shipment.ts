@@ -59,4 +59,17 @@ export const shipmentService = {
       throw new Error(errorMessage);
     }
   },
+
+  // Track shipment by tracking number
+  async trackByNumber(trackingNumber: string): Promise<Shipment> {
+    try {
+      const response = await apiClient.get<ShipmentDetailResponse>(
+        `/shipments/tracking/${trackingNumber}`
+      );
+      return response.data.data;
+    } catch (error) {
+      const errorMessage = handleAxiosError(error as AxiosErrorType);
+      throw new Error(errorMessage);
+    }
+  },
 };

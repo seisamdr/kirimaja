@@ -70,3 +70,14 @@ export const useDownloadPdf = () => {
     },
   });
 };
+
+// Track shipment by tracking number
+export const useTrackShipment = () => {
+  return useMutation({
+    mutationFn: (trackingNumber: string) =>
+      shipmentService.trackByNumber(trackingNumber),
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+};
