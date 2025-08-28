@@ -4,11 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page, type PageBreadcrumbItem } from "@/components/ui/page";
 import {
   Box,
-  BoxTick,
   CallIncoming,
   CallOutgoing,
   CardPos,
-  CloseCircle,
   Gps,
   I3DCubeScan,
   Location,
@@ -17,12 +15,12 @@ import {
   TruckTime,
   User,
 } from "iconsax-reactjs";
-import { Slash, Truck } from "lucide-react";
+import { Slash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "react-hot-toast";
 import { useMeta, META_DATA } from "@/hooks/use-meta";
-import { useShipment } from "@/hooks/use-shipment";
+import { useDownloadPdf, useShipment } from "@/hooks/use-shipment";
 import {
   getStatusBadgeVariant,
   getStatusIcon,
@@ -32,9 +30,12 @@ import {
 const DetailPage = () => {
   // Use custom meta hook
   useMeta(META_DATA["send-package-detail"]);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const downloadPdfMutation = useDownloadPdf();
 
   const shipmentId = id ? parseInt(id) : 0;
 
@@ -53,13 +54,9 @@ const DetailPage = () => {
 
     try {
       setDownloadingPdf(true);
-      // Mock PDF download - in real app would download actual PDF
-      toast.success("PDF akan diunduh (fitur demo)");
+      toast.success("PDF sedang diunduh");
 
-      // Simulate download delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast.success("PDF berhasil diunduh");
+      await downloadPdfMutation.mutateAsync(parseInt(id));
     } catch (error) {
       console.error("Failed to download PDF:", error);
       toast.error("Gagal mengunduh PDF");

@@ -46,4 +46,17 @@ export const shipmentService = {
       throw new Error(errorMessage);
     }
   },
+
+  // Download PDF
+  async downloadPdf(id: number): Promise<Blob> {
+    try {
+      const response = await apiClient.get(`/shipments/${id}/pdf`, {
+        responseType: "blob",
+      });
+      return response.data as Blob;
+    } catch (error) {
+      const errorMessage = handleAxiosError(error as AxiosErrorType);
+      throw new Error(errorMessage);
+    }
+  },
 };

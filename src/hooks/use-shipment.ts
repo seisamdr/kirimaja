@@ -48,3 +48,25 @@ export const useCreateShipment = () => {
     },
   });
 };
+
+// Download PDF
+export const useDownloadPdf = () => {
+  return useMutation({
+    mutationFn: (id: number) => shipmentService.downloadPdf(id),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `shipment-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("PDF berhasil di unduh");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+};
