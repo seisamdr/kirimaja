@@ -30,6 +30,8 @@ const DetailPage = () => {
 
   const { data: shipment, isLoading: loading, error } = useShipment(shipmentId);
 
+  console.log(shipment);
+
   useEffect(() => {
     if (!shipmentId) {
       toast.error("ID pengiriman tidak valid");
