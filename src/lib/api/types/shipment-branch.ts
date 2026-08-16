@@ -15,6 +15,7 @@ export interface ShipmentBranchLog {
   status: string;
   description: string;
   scanned_by_user_id: number;
+  is_ready_to_pickup?: boolean;
   scan_time: string;
   created_at: string;
   updated_at: string;
